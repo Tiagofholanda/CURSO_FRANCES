@@ -11,9 +11,9 @@ st.write("""
 Aprenda sobre tempos verbais, concordância, preposições e muito mais para estruturar suas frases corretamente.
 """)
 
-# Exibir o vídeo de Gramática
-video_path = "videos/gramatica.mp4"
-st.video(video_path)
+# Exibir o vídeo de Gramática via URL Bruta do GitHub
+video_url = "https://raw.githubusercontent.com/seu_usuario/meu_site_frances/main/videos/gramatica.mp4"  # Substitua pelo seu URL
+st.video(video_url)
 
 # Quiz de Gramática
 gramatica_quiz()

@@ -11,9 +11,9 @@ st.write("""
 Pratique os sons específicos do francês e melhore sua fluência e compreensão auditiva.
 """)
 
-# Exibir o vídeo de Pronúncia
-video_path = "videos/pronunciacao.mp4"
-st.video(video_path)
+# Exibir o vídeo de Pronúncia via URL Bruta do GitHub
+video_url = "https://raw.githubusercontent.com/seu_usuario/meu_site_frances/main/videos/pronunciacao.mp4"  # Substitua pelo seu URL
+st.video(video_url)
 
 # Quiz de Pronúncia
 pronunciacao_quiz()

@@ -11,9 +11,9 @@ st.write("""
 Aprenda novas palavras e expressões essenciais para se comunicar efetivamente.
 """)
 
-# Exibir o vídeo de Vocabulário
-video_path = "videos/vocabulario.mp4"
-st.video(video_path)
+# Exibir o vídeo de Vocabulário via URL Bruta do GitHub
+video_url = "https://raw.githubusercontent.com/seu_usuario/meu_site_frances/main/videos/vocabulario.mp4"  # Substitua pelo seu URL
+st.video(video_url)
 
 # Quiz de Vocabulário
 vocabulario_quiz()
