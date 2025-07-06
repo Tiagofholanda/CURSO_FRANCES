@@ -8,9 +8,47 @@ import time
 from datetime import datetime
 
 def load_css():
-    """Carrega o arquivo CSS com os estilos personalizados"""
-    with open("assets/styles.css", "r") as f:
-        css = f.read()
+    """Carrega os estilos CSS diretamente no código"""
+    css = """
+    /* Estilos básicos */
+    :root {
+        --primary-color: #4a6fa5;
+        --secondary-color: #166088;
+        --accent-color: #4fc3a1;
+        --background-color: #f8f9fa;
+        --text-color: #333333;
+        --border-radius: 8px;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Estilos gerais */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--background-color);
+    }
+    
+    /* Estilos para dispositivos móveis */
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding: 1rem 1rem 10rem;
+        }
+        
+        .streamlit-expanderHeader {
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .stVideo {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+    }
+    """
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 def apply_responsive_styles():
