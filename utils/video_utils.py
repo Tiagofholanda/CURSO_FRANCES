@@ -124,22 +124,10 @@ def display_video(
 
 def get_video_thumbnail(video_url: str) -> Optional[str]:
     """
-    Obtém uma miniatura de um vídeo, se disponível.
-    
-    Args:
-        video_url: URL do vídeo
-        
-    Returns:
-        URL da miniatura ou None se não disponível
-    """
-    if not video_url:
-        return None
-    
-    # YouTube
+Módulo para manipulação de vídeos no Curso de Francês.
+"""
     if 'youtube.com' in video_url or 'youtu.be' in video_url:
-        video_id = None
-        
-        # Extrai o ID do vídeo de diferentes formatos de URL do YouTube
+        if 'youtube.com' in video_url:
         if 'youtube.com/watch' in video_url:
             video_id = video_url.split('v=')[1].split('&')[0]
         elif 'youtu.be/' in video_url:
