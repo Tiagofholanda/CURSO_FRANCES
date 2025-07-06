@@ -1,0 +1,6 @@
+st.header("Deixe seu Feedback")
+feedback = st.text_area("Comentário:")
+
+if st.button("Enviar"):
+    st.write("Obrigado pelo seu feedback!")
+    # Aqui você pode adicionar código para salvar o feedback em um arquivo ou banco de dados
