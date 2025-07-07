@@ -59,12 +59,48 @@ Este é um curso completo de francês desenvolvido para ajudar você a aprender 
 
 # Vídeo incorporado
 video_url = "https://drive.google.com/file/d/174Q2EThuNIFj8bn0lKCiZQBvBRDzZLcB/view"
-try:
-    from utils.video_security import get_secure_video_embed
-    secure_embed = get_secure_video_embed(video_url)
-    st.markdown(secure_embed, unsafe_allow_html=True)
-except Exception as e:
-    st.warning(f"Não foi possível carregar o vídeo de introdução: {str(e)}")
+
+def get_safe_video_embed(url):
+    """Versão segura para obter o embed do vídeo"""
+    try:
+        if not url or not isinstance(url, str):
+            return None
+            
+        if 'drive.google.com' in url:
+            # Extrai o ID do arquivo da URL do Google Drive
+            if '/file/d/' in url:
+                file_id = url.split('/file/d/')[1].split('/')[0]
+            else:
+                # Tenta extrair o ID de outros formatos de URL do Google Drive
+                file_id = url.split('id=')[1].split('&')[0] if 'id=' in url else None
+                
+            if not file_id:
+                return None
+                
+            embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
+            return f"""
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; margin: 20px 0;">
+                <iframe 
+                    src="{embed_url}" 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            """
+        return None
+    except Exception as e:
+        print(f"Erro ao gerar embed do vídeo: {str(e)}")
+        return None
+
+# Tenta carregar o vídeo de forma segura
+video_embed = get_safe_video_embed(video_url)
+if video_embed:
+    st.components.v1.html(video_embed, height=500)
+else:
+    st.warning("Não foi possível carregar o vídeo de introdução. Por favor, tente novamente mais tarde.")
+    st.markdown(f"[Assistir no Google Drive]({video_url})")
 
 st.markdown("## 📂 Material de Apoio")
 st.markdown("Faça o download do material complementar para acompanhar as aulas:")

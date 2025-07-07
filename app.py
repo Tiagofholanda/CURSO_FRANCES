@@ -36,22 +36,21 @@ if 'authenticated' not in st.session_state:
     st.session_state.username = ''
     st.session_state.role = ''
 
-# Se não estiver autenticado e não estiver na página de introdução, redireciona
-current_page = st.query_params.get('page', [''])[0]
-if not st.session_state.authenticated and not st.rerun and '00_Introdução' not in current_page:
-    st.switch_page("pages/00_Introdução.py")
-
 # URL da planilha do Google Sheets
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1RWd50uSh5AOTloRCXvIKPU9jBEUf4LI3/edit?usp=sharing"
 
-# Se não estiver autenticado e não estiver na página de introdução, redireciona
+# Verifica se estamos na página de introdução
 current_page = st.query_params.get('page', [''])[0]
-if not st.session_state.authenticated and '00_Introdução' not in current_page:
-    st.switch_page("pages/00_Introdução.py")
-    st.stop()
+is_intro_page = '00_Introdução' in current_page
 
-# Se estiver na página de introdução, não faz nada
-if '00_Introdução' in current_page:
+# Se não estiver autenticado e não estiver na página de introdução
+if not st.session_state.authenticated and not is_intro_page:
+    # Usa st.rerun para garantir que o redirecionamento aconteça após a inicialização
+    st.query_params.page = '00_Introdução'
+    st.rerun()
+
+# Se estiver na página de introdução, não renderiza o resto do app
+if is_intro_page:
     st.stop()
 
 # Barra lateral com menu de navegação
