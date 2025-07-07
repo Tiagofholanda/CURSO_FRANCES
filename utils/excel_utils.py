@@ -16,20 +16,32 @@ def get_google_sheets_url(url):
         URL de exportação no formato XLSX
     """
     if not url or not isinstance(url, str):
+        st.error("URL inválida ou não fornecida")
         return None
-        
+    
     try:
-        if 'docs.google.com/spreadsheets/d/' in url:
+        # Remove parâmetros de consulta se existirem
+        clean_url = url.split('?')[0]
+        
+        # Verifica se é uma URL do Google Sheets
+        if 'docs.google.com/spreadsheets/d/' in clean_url:
             # Extrai o ID da planilha da URL
-            if '/edit' in url:
-                file_id = url.split('/d/')[1].split('/edit')[0]
+            if '/d/' in clean_url and ('/edit' in clean_url or '/view' in clean_url):
+                file_id = clean_url.split('/d/')[1].split('/')[0]
+            elif 'id=' in clean_url:
+                file_id = clean_url.split('id=')[1].split('&')[0]
             else:
-                file_id = url.split('/d/')[1].split('/')[0].split('?')[0]
-                
-            return f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx"
+                st.error("Formato de URL do Google Sheets não reconhecido")
+                return None
+            
+            # Retorna a URL de exportação
+            export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx"
+            return export_url
+            
         return url
     except Exception as e:
         st.error(f"Erro ao processar a URL da planilha: {str(e)}")
+        st.error(f"URL fornecida: {url}")
         return None
 
 def load_excel_from_google_drive(url, max_retries=3, retry_delay=2):
@@ -44,34 +56,67 @@ def load_excel_from_google_drive(url, max_retries=3, retry_delay=2):
     Returns:
         DataFrame com os dados da planilha ou DataFrame vazio em caso de erro
     """
+    # Inicializa a sessão de debug se não existir
+    if 'debug_info' not in st.session_state:
+        st.session_state.debug_info = []
+    
+    def add_debug_info(message):
+        """Adiciona uma mensagem ao log de depuração"""
+        timestamp = pd.Timestamp.now().strftime('%H:%M:%S')
+        st.session_state.debug_info.append(f"[{timestamp}] {message}")
+    
+    add_debug_info(f"Iniciando carregamento da planilha: {url}")
+    
     if not url:
-        st.error("URL da planilha não fornecida.")
+        error_msg = "URL da planilha não fornecida."
+        add_debug_info(error_msg)
+        st.error(error_msg)
         return pd.DataFrame()
-        
+    
+    # Verifica se a URL é uma URL do Google Sheets
+    if 'docs.google.com/spreadsheets/' not in url:
+        error_msg = "URL inválida. Por favor, forneça uma URL do Google Sheets."
+        add_debug_info(error_msg)
+        st.error(error_msg)
+        return pd.DataFrame()
+    
+    # Tenta converter a URL para o formato de exportação
+    add_debug_info("Convertendo URL para formato de exportação...")
     export_url = get_google_sheets_url(url)
+    
     if not export_url:
+        error_msg = "Não foi possível converter a URL para o formato de exportação."
+        add_debug_info(error_msg)
+        st.error(error_msg)
         return pd.DataFrame()
-        
+    
+    add_debug_info(f"URL de exportação gerada: {export_url}")
+    
+    # Tenta baixar o arquivo com várias tentativas
     for attempt in range(max_retries):
         try:
-            # Faz o download do arquivo
-            response = requests.get(export_url, timeout=30)
+            add_debug_info(f"Tentativa {attempt + 1} de {max_retries} - Baixando planilha...")
+            
+            # Configura o cabeçalho para simular um navegador
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # Baixa o arquivo
+            response = requests.get(export_url, headers=headers, timeout=30)
             response.raise_for_status()
             
-            # Carrega o arquivo Excel
+            add_debug_info("Planilha baixada com sucesso. Processando dados...")
+            
+            # Carrega o conteúdo no pandas
             df = pd.read_excel(BytesIO(response.content))
             
             # Verifica se o DataFrame está vazio
             if df.empty:
-                st.warning("A planilha está vazia.")
-                return df
-                
-            # Verifica se as colunas necessárias existem
-            required_columns = ['Módulo', 'Título da Aula', 'Link do Vídeo', 'Link do Documento', 'Duração', 'ordem']
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            
-            if missing_columns:
-                st.warning(f"Atenção: Algumas colunas esperadas não foram encontradas: {', '.join(missing_columns)}")
+                add_debug_info("Aviso: O DataFrame retornado está vazio.")
+            else:
+                add_debug_info(f"Planilha carregada com sucesso. Dimensões: {df.shape}")
+                add_debug_info(f"Colunas encontradas: {', '.join(df.columns)}")
             
             return df
             

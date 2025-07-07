@@ -39,6 +39,9 @@ if 'authenticated' not in st.session_state:
 # URL da planilha do Google Sheets
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1RWd50uSh5AOTloRCXvIKPU9jBEUf4LI3/edit?usp=sharing"
 
+# Configurações de depuração
+DEBUG_MODE = True  # Defina como False em produção
+
 # Verifica se estamos na página de introdução
 current_page = st.query_params.get('page', [''])[0]
 is_intro_page = '00_Introdução' in current_page
@@ -77,18 +80,58 @@ elif page == "Gramática":
 if st.sidebar.button(" Sair"):
     logout()
 
+# Configurações de depuração
+DEBUG_MODE = True  # Defina como False em produção
+
 # Carrega os dados da planilha
 try:
-    df = load_excel_from_google_drive(SPREADSHEET_URL)
+    with st.spinner('Carregando dados da planilha...'):
+        df = load_excel_from_google_drive(SPREADSHEET_URL)
+    
     if df.empty:
-        st.error("Não foi possível carregar a planilha. Por favor, tente novamente mais tarde.")
+        st.error("❌ A planilha está vazia ou não pôde ser carregada.")
+        
+        # Exibe informações de depuração se disponíveis
+        if hasattr(st.session_state, 'debug_info') and DEBUG_MODE:
+            with st.expander("🔍 Detalhes do erro (Debug)"):
+                st.text("\n".join(st.session_state.debug_info))
+        
         st.stop()
+        
 except Exception as e:
-    st.error("Erro ao carregar o conteúdo. Por favor, tente novamente mais tarde.")
+    st.error(f"❌ Erro ao carregar a planilha: {str(e)}")
+    
+    # Exibe informações de depuração se disponíveis
+    if hasattr(st.session_state, 'debug_info') and DEBUG_MODE:
+        with st.expander("🔍 Detalhes do erro (Debug)"):
+            st.text("\n".join(st.session_state.debug_info + [f"Erro: {str(e)}"]))
+    
     st.stop()
 
 # Carrega os dados dos módulos
-modules_data = get_modules_data(SPREADSHEET_URL)
+try:
+    with st.spinner('Processando módulos...'):
+        modules_data = get_modules_data(SPREADSHEET_URL)
+    
+    if not modules_data:
+        st.error("❌ Não foi possível carregar os módulos da planilha.")
+        
+        # Exibe informações de depuração se disponíveis
+        if hasattr(st.session_state, 'debug_info') and DEBUG_MODE:
+            with st.expander("🔍 Detalhes do erro (Debug)"):
+                st.text("\n".join(st.session_state.debug_info))
+        
+        st.stop()
+        
+except Exception as e:
+    st.error(f"❌ Erro ao processar os módulos: {str(e)}")
+    
+    # Exibe informações de depuração se disponíveis
+    if hasattr(st.session_state, 'debug_info') and DEBUG_MODE:
+        with st.expander("🔍 Detalhes do erro (Debug)"):
+            st.text("\n".join(st.session_state.debug_info + [f"Erro: {str(e)}"]))
+    
+    st.stop()
 
 # Barra lateral para navegação
 st.sidebar.title("Navegação")
@@ -98,11 +141,6 @@ selected_module = st.sidebar.selectbox(
     "Selecione o Módulo",
     list(modules_data.keys()) if modules_data else ["Nenhum módulo disponível"]
 )
-
-# Se não houver módulos, mostra mensagem
-if not modules_data:
-    st.error("Nenhum módulo encontrado na planilha.")
-    st.stop()
 
 # Exibe o conteúdo do módulo selecionado
 st.title(f"Módulo: {selected_module}")

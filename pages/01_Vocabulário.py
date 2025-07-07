@@ -22,12 +22,23 @@ MODULE_NAME = "Vocabulário"
 def get_vocabulary_lessons():
     """Busca as lições de vocabulário na planilha"""
     try:
+        st.session_state.debug_info = "Iniciando carregamento da planilha..."
+        
         # Carrega os dados da planilha
-        df = load_excel_from_google_drive(SPREADSHEET_URL)
+        try:
+            df = load_excel_from_google_drive(SPREADSHEET_URL)
+            st.session_state.debug_info = f"Planilha carregada. Colunas: {', '.join(df.columns) if not df.empty else 'vazia'}"
+        except Exception as e:
+            st.error(f"Erro ao carregar a planilha: {str(e)}")
+            if hasattr(st.session_state, 'debug_info'):
+                st.error(f"Debug: {st.session_state.debug_info}")
+            return {}
         
         # Verifica se o DataFrame está vazio
         if df.empty:
             st.warning("A planilha está vazia ou não pôde ser carregada.")
+            if hasattr(st.session_state, 'debug_info'):
+                st.error(f"Debug: {st.session_state.debug_info}")
             return {}
             
         # Verifica se as colunas necessárias existem
@@ -36,6 +47,7 @@ def get_vocabulary_lessons():
         
         if missing_columns:
             st.error(f"Colunas ausentes na planilha: {', '.join(missing_columns)}")
+            st.error(f"Colunas encontradas: {', '.join(df.columns)}")
             return {}
             
         # Remove linhas onde o Módulo está vazio
@@ -48,7 +60,7 @@ def get_vocabulary_lessons():
         vocabulario_df = df[df['Módulo'].str.lower() == MODULE_NAME.lower()]
         
         if vocabulario_df.empty:
-            st.warning(f"Nenhuma lição de {MODULE_NAME.lower()} encontrada na planilha.")
+            st.warning(f"Nenhuma lição de '{MODULE_NAME}' encontrada na planilha. Módulos disponíveis: {', '.join(df['Módulo'].unique())}")
             return {}
             
         # Preenche valores vazios
@@ -115,10 +127,23 @@ Nesta seção, você encontrará lições com vocabulário essencial em francês
 
 def display_vocabulary_lessons():
     """Exibe as lições de vocabulário"""
-    modules = get_vocabulary_lessons()
-    
-    if not modules or 'lessons' not in modules:
-        st.warning(f"Nenhuma lição de {MODULE_NAME.lower()} encontrada.")
+    try:
+        with st.spinner('Carregando lições de vocabulário...'):
+            modules = get_vocabulary_lessons()
+        
+        if not modules or 'lessons' not in modules:
+            st.warning(f"Nenhuma lição de {MODULE_NAME.lower()} encontrada.")
+            
+            # Exibe informações de depuração se disponíveis
+            if hasattr(st.session_state, 'debug_info'):
+                with st.expander("Detalhes do erro"):
+                    st.text("\n".join(st.session_state.debug_info))
+            return
+    except Exception as e:
+        st.error(f"Erro ao carregar as lições: {str(e)}")
+        if hasattr(st.session_state, 'debug_info'):
+            with st.expander("Detalhes do erro"):
+                st.text("\n".join(st.session_state.debug_info + [f"Erro: {str(e)}"]))
         return
     
     lessons = modules['lessons']
