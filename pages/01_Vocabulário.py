@@ -157,14 +157,20 @@ def display_vocabulary_lessons():
                         expanded=is_completed):
             # Vídeo
             video_url = str(lesson.get('video_url', '')).strip()
-            if video_url and video_url.lower() not in ['nan', 'none', '']:
+            if video_url and video_url.lower() not in ['nan', 'none', ''] and video_url.startswith(('http://', 'https://')):
                 st.markdown("### 🎥 Assista à Aula")
                 try:
                     from utils.video_security import get_secure_video_embed
                     secure_embed = get_secure_video_embed(video_url)
-                    st.markdown(secure_embed, unsafe_allow_html=True)
+                    if secure_embed and not secure_embed.startswith('<p>URL de vídeo não suportada'):
+                        st.markdown(secure_embed, unsafe_allow_html=True)
+                    else:
+                        st.warning("Formato de vídeo não suportado. Por favor, utilize links do YouTube ou Google Drive.")
+                        st.markdown(f"🔗 [Acessar vídeo]({video_url})", unsafe_allow_html=True)
                 except Exception as e:
-                    st.warning(f"Não foi possível carregar o vídeo: {str(e)}")
+                    st.warning("Não foi possível carregar o vídeo incorporado.")
+                    st.markdown(f"🔗 [Acessar vídeo]({video_url})", unsafe_allow_html=True)
+                    st.error(f"Erro técnico: {str(e)}", icon="⚠️")
             
             # Material de Apoio
             doc_url = str(lesson.get('doc_url', '')).strip()
@@ -189,14 +195,37 @@ def display_vocabulary_lessons():
             if youtube_url and youtube_url.lower() not in ['nan', 'none', '']:
                 st.markdown("### 🎥 Vídeo Extra no YouTube")
                 try:
-                    st.markdown(
-                        f'<a href="{youtube_url}" '
-                        'style="display: inline-flex; align-items: center; background-color: #FF0000; color: white; '
-                        'padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: bold; margin: 10px 0;" '
-                        'target="_blank">'
-                        '▶️ Assistir no YouTube</a>',
-                        unsafe_allow_html=True
-                    )
+                    # Extrai o ID do vídeo do YouTube
+                    if 'youtube.com/watch?v=' in youtube_url:
+                        video_id = youtube_url.split('v=')[1].split('&')[0]
+                    elif 'youtu.be/' in youtube_url:
+                        video_id = youtube_url.split('youtu.be/')[-1].split('?')[0]
+                    else:
+                        video_id = ''
+                    
+                    if video_id:
+                        # Cria o iframe para incorporar o vídeo
+                        embed_url = f"https://www.youtube.com/embed/{video_id}?rel=0&modestbranding=1&showinfo=0"
+                        st.components.v1.iframe(embed_url, height=500)
+                        
+                        # Adiciona o link para o YouTube também
+                        st.markdown(
+                            f'<div style="margin-top: 10px;">'
+                            f'<a href="{youtube_url}" target="_blank" style="color: #FF0000; text-decoration: none;">'
+                            '🔗 Assistir no YouTube</a>'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        # Se não conseguir extrair o ID, mostra apenas o link
+                        st.markdown(
+                            f'<a href="{youtube_url}" '
+                            'style="display: inline-flex; align-items: center; background-color: #FF0000; color: white; '
+                            'padding: 10px 20px; border-radius: 4px; text-decoration: none; font-weight: bold; margin: 10px 0;" '
+                            'target="_blank">'
+                            '▶️ Assistir no YouTube</a>',
+                            unsafe_allow_html=True
+                        )
                 except Exception as e:
                     st.warning(f"Link do YouTube inválido: {str(e)}")
             

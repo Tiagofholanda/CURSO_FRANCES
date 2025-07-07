@@ -27,14 +27,13 @@ def set_security_headers():
     )
     
     # Adiciona meta tags de segurança no cabeçalho HTML
-    st.markdown(
-        f"""
-        <meta http-equiv="Content-Security-Policy" content="{csp.replace('\n', ' ').strip()}">
-        <meta http-equiv="X-Content-Type-Options" content="nosniff">
-        <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
-        <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-        <meta name="referrer" content="strict-origin-when-cross-origin">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        """,
-        unsafe_allow_html=True
-    )
+    csp_content = csp.replace('\n', ' ').strip()
+    html_content = f'''
+    <meta http-equiv="Content-Security-Policy" content="{csp_content}">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    '''
+    st.markdown(html_content, unsafe_allow_html=True)
