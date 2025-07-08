@@ -574,44 +574,93 @@ def display_lesson(lesson: Dict[str, Any], module_name: str):
         import traceback
         print(f"Erro em display_lesson: {traceback.format_exc()}")
 
-def get_modules_data(spreadsheet_url):
+def get_modules_data(file_path):
     """
-    Carrega os dados da planilha e retorna um dicionário com os módulos
-    """
-    df = load_excel_from_google_drive(spreadsheet_url)
-    if df.empty:
-        return {}
+    Carrega os dados da planilha local e retorna um dicionário com os módulos
     
-    # Garante que as colunas necessárias existam
-    required_columns = ['Módulo', 'Título da Aula', 'Link do Vídeo', 'Link do Documento']
-    for col in required_columns:
-        if col not in df.columns:
-            st.error(f"Coluna obrigatória não encontrada: {col}")
+    Args:
+        file_path: Caminho para o arquivo Excel local
+        
+    Returns:
+        Dicionário com os módulos e suas lições
+    """
+    print(f"[DEBUG] Iniciando carregamento do arquivo: {file_path}")
+    
+    try:
+        # Lê o arquivo Excel local
+        print("[DEBUG] Lendo arquivo Excel...")
+        df = pd.read_excel(file_path)
+        print(f"[DEBUG] Arquivo lido. Colunas: {df.columns.tolist()}")
+        
+        if df.empty:
+            print("[ERRO] O arquivo Excel está vazio")
             return {}
-    
-    # Remove linhas sem link de vídeo
-    df = df.dropna(subset=['Link do Vídeo'])
-    
-    # Agrupa por módulo
-    modules = {}
-    for _, row in df.iterrows():
-        module_name = row['Módulo']
-        if pd.isna(module_name):
-            module_name = "Outros"
         
-        if module_name not in modules:
-            modules[module_name] = []
+        # Verifica colunas obrigatórias
+        required_columns = ['Módulo', 'Título da Aula', 'Link do Vídeo']
+        missing_columns = [col for col in required_columns if col not in df.columns]
         
-        modules[module_name].append({
-            'title': row['Título da Aula'],
-            'video_url': row['Link do Vídeo'],
-            'doc_url': row.get('Link do Documento', ''),
-            'duration': row.get('Duração', ''),
-            'order': row.get('ordem', 0)
-        })
-    
-    # Ordena os itens de cada módulo
-    for module in modules:
-        modules[module].sort(key=lambda x: x.get('order', 0))
-    
-    return modules
+        if missing_columns:
+            error_msg = f"Colunas obrigatórias não encontradas: {', '.join(missing_columns)}"
+            print(f"[ERRO] {error_msg}")
+            return {}
+        
+        # Remove linhas sem link de vídeo
+        initial_count = len(df)
+        df = df.dropna(subset=['Link do Vídeo'])
+        removed_count = initial_count - len(df)
+        
+        if removed_count > 0:
+            print(f"[INFO] Removidas {removed_count} linhas sem link de vídeo")
+        
+        if df.empty:
+            print("[ERRO] Nenhuma linha com link de vídeo válido encontrada")
+            return {}
+        
+        # Agrupa por módulo
+        modules = {}
+        for idx, row in df.iterrows():
+            try:
+                # Obtém o nome do módulo
+                module_name = str(row['Módulo']).strip() if pd.notna(row['Módulo']) else "Outros"
+                
+                # Inicializa a lista de módulos se necessário
+                if module_name not in modules:
+                    modules[module_name] = []
+                
+                # Obtém o título da aula
+                title = str(row['Título da Aula']).strip() if pd.notna(row['Título da Aula']) else f"Aula {idx+1}"
+                
+                # Obtém o link do vídeo
+                video_url = str(row['Link do Vídeo']).strip()
+                
+                # Adiciona a lição ao módulo
+                modules[module_name].append({
+                    'title': title,
+                    'video_url': video_url,
+                    'doc_url': str(row.get('Link do Documento', '')).strip(),
+                    'duration': str(row.get('Duração', '')).strip(),
+                    'order': int(row.get('ordem', idx))
+                })
+                
+            except Exception as e:
+                print(f"[ERRO] Erro ao processar linha {idx+2}: {str(e)}")
+                continue
+        
+        # Ordena os itens de cada módulo
+        for module_name in modules:
+            try:
+                modules[module_name].sort(key=lambda x: x.get('order', 0))
+            except Exception as e:
+                print(f"[ERRO] Erro ao ordenar módulo {module_name}: {str(e)}")
+        
+        print(f"[DEBUG] Processamento concluído. Módulos carregados: {len(modules)}")
+        return modules
+        
+    except Exception as e:
+        print(f"[ERRO] Erro ao processar o arquivo: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return {}
+
+
